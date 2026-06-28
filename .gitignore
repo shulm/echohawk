@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+env/
+.ipynb_checkpoints/
+.DS_Store
+
+# datasets are large / licensed — never commit raw audio
+data/*
+!data/README.md
+*.wav
+*.flac
+*.npy
+
+# keep results/ figures committed so the README renders
+results/*.pt

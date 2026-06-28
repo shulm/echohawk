@@ -1,0 +1,10 @@
+# Core (everything in examples/ runs with just these)
+numpy>=1.23
+scipy>=1.9
+scikit-learn>=1.1
+matplotlib>=3.5
+
+# Optional — for the CNN model and real-audio I/O (install in the `rl` env):
+# torch>=2.0          # GPU/CUDA build for training DroneCNN
+# soundfile>=0.12     # reading WAV/FLAC from real datasets
+# librosa>=0.10       # convenience audio features (package itself uses numpy/scipy)
