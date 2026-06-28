@@ -129,8 +129,8 @@ echohawk/
 
 ## Roadmap / extensions
 
-- Train the CNN on **DADS** (Hugging Face) and benchmark vs. the baseline. [DONE]
-- Run DOA on the **DREGON** 8-mic array recordings and report error vs. ground truth. [DONE]
+- Train the CNN on DroneAudioDataset (session-grouped) — [DONE]; benchmark on **DADS** (Hugging Face) — pending (unblocked network).
+- Run DOA on the **DREGON** 8-mic array recordings — code ready, pending physical dataset access.
 - Add a Kalman tracker over DOA; add Docker + CI. [DONE]
 
 ## License

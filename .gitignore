@@ -14,3 +14,11 @@ data/*
 
 # keep results/ figures committed so the README renders
 results/*.pt
+
+# internal build process — keep local, do not publish
+doer_prompts/
+HANDOFF.md
+milestone_report.md
+fix_data_io.py
+*.log
+.pytest_cache/
