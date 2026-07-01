@@ -96,6 +96,10 @@ python examples/07_doa_tracking_demo.py     # DOA tracking over time
 
 All figures are written to `results/`.
 
+## Documentation
+
+Full, beginner-friendly documentation lives in [`docs/`](docs/README.md): a plain-language [overview](docs/01_overview.md) and [concepts primer](docs/02_concepts_primer.md), the [architecture](docs/03_architecture.md), the [detection](docs/04_detection_and_classification.md) and [direction-finding](docs/05_direction_finding_and_tracking.md) chapters, the [evaluation & data-leakage story](docs/06_evaluation_rigor_and_leakage.md), a [getting-started guide](docs/07_getting_started.md), an [API reference](docs/08_api_reference.md), and a [glossary](docs/09_glossary.md).
+
 ## Repository layout
 
 ```

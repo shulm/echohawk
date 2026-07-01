@@ -49,8 +49,8 @@ Table 2 contrasts the inflated file-grouped metrics with the honest, session-gro
 
 *Table 2: Real-data Detection Performance (File-level vs. Session-level Grouping)*
 
-| Metric | RF (File-grouped) | RF (Session-grouped) | | CNN (File-grouped) | CNN (Session-grouped) |
-|--------|-------------------|----------------------|-|--------------------|-----------------------|
+| Metric | RF (File-grouped) | RF (Session-grouped) | CNN (File-grouped) | CNN (Session-grouped) |
+|--------|-------------------|----------------------|--------------------|-----------------------|
 | **ROC-AUC** | 0.9872 | **0.9815** | | 0.9968 | **0.9941** |
 | **Accuracy**| 0.9631 | **0.9638** | | 0.9868 | **0.9840** |
 | **Pd@1%FA** | 0.7964 | **0.7453** | | 0.9519 | **0.9384** |
