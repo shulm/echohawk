@@ -7,14 +7,62 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from sklearn.metrics import (roc_curve, auc, confusion_matrix,  # noqa: E402
-                             ConfusionMatrixDisplay)
+from sklearn.metrics import (accuracy_score, roc_auc_score, roc_curve, auc,  # noqa: E402
+                             confusion_matrix, ConfusionMatrixDisplay)
 
 
-def pd_at_pfa(y_true, scores, pfa=0.01):
-    """Probability of detection at a fixed probability of false alarm."""
+def pd_at_pfa(y_true, scores, pfa=0.01, method="interp", return_threshold=False):
+    """Probability of detection at a fixed probability of false alarm.
+
+    ``method="interp"`` returns the linearly interpolated ROC operating point.
+    ``method="empirical"`` returns the best observed TPR with FPR <= ``pfa``.
+    """
     fpr, tpr, _ = roc_curve(y_true, scores)
-    return float(np.interp(pfa, fpr, tpr))
+    if method == "interp":
+        value = float(np.interp(pfa, fpr, tpr))
+        if return_threshold:
+            return value, None
+        return value
+    if method == "empirical":
+        fpr, tpr, thresholds = roc_curve(y_true, scores)
+        mask = fpr <= pfa
+        if not np.any(mask):
+            value, threshold = 0.0, float("inf")
+        else:
+            candidates = np.where(mask)[0]
+            best = candidates[int(np.argmax(tpr[candidates]))]
+            value = float(tpr[best])
+            threshold = float(thresholds[best])
+        if return_threshold:
+            return value, threshold
+        return value
+    raise ValueError(f"unknown Pd@Pfa method: {method}")
+
+
+def binary_detection_metrics(y_true, scores, threshold=0.5, pd_method="interp"):
+    """Return pooled binary detection metrics for one held-out split."""
+    y_true = np.asarray(y_true)
+    scores = np.asarray(scores)
+    y_pred = (scores >= threshold).astype(int)
+    return {
+        "accuracy": float(accuracy_score(y_true, y_pred)),
+        "auc": float(roc_auc_score(y_true, scores)),
+        "pd_at_1pct_fa": pd_at_pfa(y_true, scores, pfa=0.01, method=pd_method),
+        "pd_at_5pct_fa": pd_at_pfa(y_true, scores, pfa=0.05, method=pd_method),
+        "pd_at_10pct_fa": pd_at_pfa(y_true, scores, pfa=0.10, method=pd_method),
+    }
+
+
+def mean_ci(values):
+    """Return mean and normal-approximate 95% CI half-width."""
+    arr = np.asarray(values, dtype=float)
+    if arr.size == 0:
+        return float("nan"), float("nan")
+    mean = float(arr.mean())
+    if arr.size == 1:
+        return mean, 0.0
+    ci = float(1.96 * arr.std(ddof=1) / np.sqrt(arr.size))
+    return mean, ci
 
 
 def plot_roc(y_true, scores, path, title="Drone detection ROC"):

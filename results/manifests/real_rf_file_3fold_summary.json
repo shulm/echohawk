@@ -1,0 +1,90 @@
+{
+  "assertions": [
+    "fold=0 label=0: test=3453, train=6919; pairwise disjoint=PASS",
+    "fold=0 label=1: test=447, train=885; pairwise disjoint=PASS",
+    "fold=1 label=0: test=3460, train=6912; pairwise disjoint=PASS",
+    "fold=1 label=1: test=442, train=890; pairwise disjoint=PASS",
+    "fold=2 label=0: test=3459, train=6913; pairwise disjoint=PASS",
+    "fold=2 label=1: test=443, train=889; pairwise disjoint=PASS"
+  ],
+  "fold_metrics": [
+    {
+      "accuracy": 0.9607782101167315,
+      "auc": 0.9839060054991974,
+      "pd_at_10pct_fa": 0.9642857142857143,
+      "pd_at_1pct_fa": 0.793759236453202,
+      "pd_at_5pct_fa": 0.9359605911330049
+    },
+    {
+      "accuracy": 0.9618677042801557,
+      "auc": 0.9866993994650578,
+      "pd_at_10pct_fa": 0.9643124332027075,
+      "pd_at_1pct_fa": 0.8092269326683291,
+      "pd_at_5pct_fa": 0.936232335827099
+    },
+    {
+      "accuracy": 0.9617120622568094,
+      "auc": 0.9831363545432746,
+      "pd_at_10pct_fa": 0.9582247725392887,
+      "pd_at_1pct_fa": 0.8003660049627791,
+      "pd_at_5pct_fa": 0.9225073313782991
+    }
+  ],
+  "folds": 3,
+  "group_mode": "file",
+  "group_summary": {
+    "drone": 1332,
+    "negative": 10372,
+    "total": 11704
+  },
+  "model": "rf",
+  "pd_at_pfa_method": "interp",
+  "seed": 0,
+  "summary": {
+    "accuracy": {
+      "ci95": 0.0006668004932624028,
+      "mean": 0.9614526588845655,
+      "values": [
+        0.9607782101167315,
+        0.9618677042801557,
+        0.9617120622568094
+      ]
+    },
+    "auc": {
+      "ci95": 0.0021216089164930022,
+      "mean": 0.9845805865025099,
+      "values": [
+        0.9839060054991974,
+        0.9866993994650578,
+        0.9831363545432746
+      ]
+    },
+    "pd_at_10pct_fa": {
+      "ci95": 0.00396857224814019,
+      "mean": 0.9622743066759035,
+      "values": [
+        0.9642857142857143,
+        0.9643124332027075,
+        0.9582247725392887
+      ]
+    },
+    "pd_at_1pct_fa": {
+      "ci95": 0.008782596679067027,
+      "mean": 0.8011173913614367,
+      "values": [
+        0.793759236453202,
+        0.8092269326683291,
+        0.8003660049627791
+      ]
+    },
+    "pd_at_5pct_fa": {
+      "ci95": 0.008879564236417914,
+      "mean": 0.9315667527794677,
+      "values": [
+        0.9359605911330049,
+        0.936232335827099,
+        0.9225073313782991
+      ]
+    }
+  }
+}

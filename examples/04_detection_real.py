@@ -1,177 +1,202 @@
-"""Track A (real data) -- drone detection on real datasets.
+"""Real-data Random-Forest detection with corrected grouped CV.
 
-Supports multiple datasets via the REAL_SOURCE environment variable:
-    REAL_SOURCE=dad_github : DroneAudioDataset (GitHub)
-    REAL_SOURCE=dads       : drone-audio-detection-samples (HuggingFace)
-
-If REAL_SOURCE is not set, it defaults to whichever dataset is found locally.
-
-Workflow
---------
-1. Load dataset clips.
-2. Extract ``features.feature_vector`` for every clip.
-3. Grouped split 70 / 30 train / test split  (seed=0 — fixed). Clips from the same 
-   source recording stay on the same side.
-4. Fit ``models.build_baseline("rf")`` on the *training* split only.
-5. Evaluate on the held-out test split; write ROC + confusion figures.
-6. Print accuracy, ROC-AUC, and Pd@1%, 5%, 10% FA.
-
-Hard rules obeyed
------------------
-* All random seeds fixed at 0.
-* No test-set information used during feature extraction or training.
-* Metrics come from the held-out split — no cross-validation leak.
+This script evaluates the RF baseline on DroneAudioDataset with corrected
+recording/source grouping. It also supports a leakage-pathway study comparing
+clip-level, file-level, and corrected recording-level grouping.
 """
 from __future__ import annotations
 
+import argparse
 import os
 import sys
 import time
 
 import numpy as np
-from sklearn.model_selection import GroupShuffleSplit
 
-# Make sure the repo root is on sys.path so `import echohawk` works when
-# the script is run from any directory.
 _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _REPO)
 
-from echohawk import features, models, evaluate  # noqa: E402
-from echohawk.data_io import load_dads, load_dads_hf, load_drone_audio_dataset  # noqa: E402
+from echohawk import features, models, evaluate, eval_utils  # noqa: E402
+from echohawk.data_io import load_drone_audio_dataset  # noqa: E402
 
-# ---------------------------------------------------------------------------
-# Configuration — edit here or use env vars
-# ---------------------------------------------------------------------------
-RESULTS       = os.path.join(_REPO, "results")
-FS            = 16_000
-CLIP_S        = 1.0
-SEED          = 0
-MAX_PER_CLASS = 2000    # clips per class in streaming mode
-
-_DAD_GITHUB_ROOT = os.path.join(_REPO, "data", "drone_audio_dataset")
-_DADS_LOCAL_ROOT = os.path.join(_REPO, "data", "dads")
-
-_has_dad_github = os.path.isdir(os.path.join(_DAD_GITHUB_ROOT, "Binary_Drone_Audio"))
-_has_dads_local = (
-    os.path.isdir(os.path.join(_DADS_LOCAL_ROOT, "0")) and
-    os.path.isdir(os.path.join(_DADS_LOCAL_ROOT, "1"))
-)
-
-REAL_SOURCE = os.environ.get("REAL_SOURCE", "").lower()
-if not REAL_SOURCE:
-    if _has_dad_github:
-        REAL_SOURCE = "dad_github"
-    else:
-        REAL_SOURCE = "dads"
-
-USE_LOCAL_DADS = bool(int(os.environ.get("DADS_LOCAL", "0"))) or _has_dads_local
-
-os.makedirs(RESULTS, exist_ok=True)
+RESULTS = os.path.join(_REPO, "results")
+MANIFESTS = os.path.join(RESULTS, "manifests")
+FS = 16_000
+CLIP_S = 1.0
+SEED = 0
+DATA_ROOT = os.path.join(_REPO, "data", "drone_audio_dataset")
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-def main() -> None:
-    # -----------------------------------------------------------------------
-    # 1. Load data
-    # -----------------------------------------------------------------------
-    dataset_name = ""
-    t0 = time.time()
-    
-    if REAL_SOURCE == "dad_github":
-        print(f"Loading DroneAudioDataset from local path: {_DAD_GITHUB_ROOT} ...")
-        X_list, y, groups, fs = load_drone_audio_dataset(_DAD_GITHUB_ROOT, fs=FS, clip_s=CLIP_S)
-        dataset_name = "DroneAudioDataset (GitHub)"
-    else:
-        if USE_LOCAL_DADS:
-            print(f"Loading DADS from local path: {_DADS_LOCAL_ROOT} ...")
-            X_list, y, groups, fs = load_dads(_DADS_LOCAL_ROOT, fs=FS, clip_s=CLIP_S)
-        else:
-            print("Loading DADS via HuggingFace streaming ...")
-            X_list, y, groups, fs = load_dads_hf(
-                repo_id="geronimobasso/drone-audio-detection-samples",
-                fs=FS,
-                clip_s=CLIP_S,
-                max_per_class=MAX_PER_CLASS,
-                seed=SEED,
-            )
-        dataset_name = "DADS"
+def _group_keys_for_mode(mode: str, corrected_keys, file_keys, n_samples: int):
+    if mode == "corrected":
+        return corrected_keys
+    if mode == "file":
+        return file_keys
+    if mode == "clip":
+        return np.asarray([f"clip:{i}" for i in range(n_samples)], dtype=object)
+    raise ValueError(mode)
 
-    n0 = int((y == 0).sum())
-    n1 = int((y == 1).sum())
-    
-    unique_groups = np.unique(groups)
-    print(f"  {len(X_list)} clips total  "
-          f"(class 0 / no-drone: {n0},  class 1 / drone: {n1})  "
-          f"fs={fs} Hz  clip={CLIP_S}s")
-    print(f"  {len(unique_groups)} unique source recordings.")
-    print(f"  Loaded in {time.time()-t0:.1f}s")
 
-    # -----------------------------------------------------------------------
-    # 2. Feature extraction (train + test clips together; labels not used)
-    # -----------------------------------------------------------------------
+def _format_summary(summary):
+    return {
+        key: f"{item['mean']:.4f} ± {item['ci95']:.4f}"
+        for key, item in summary.items()
+    }
+
+
+def run_rf_cv(X_list, y, corrected_keys, file_keys, folds, group_mode, save_prefix):
+    group_keys = _group_keys_for_mode(group_mode, corrected_keys, file_keys, len(y))
+    group_ids, _ = eval_utils.keys_to_group_ids(group_keys)
+    cv_folds = eval_utils.make_group_kfold(y, group_keys, n_splits=folds)
+
+    print(f"\nRF grouped CV: mode={group_mode}, folds={folds}")
+    print("Group summary:", eval_utils.group_summary(y, group_keys))
     print("Extracting features ...")
     t0 = time.time()
-    F = models.features_matrix(X_list, fs, features.feature_vector)
-    print(f"  Feature matrix: {F.shape}  ({time.time()-t0:.1f}s)")
+    F = models.features_matrix(X_list, FS, features.feature_vector)
+    print(f"  Feature matrix: {F.shape}  ({time.time() - t0:.1f}s)")
 
-    # -----------------------------------------------------------------------
-    # 3. Grouped train / test split  (seed fixed → reproducible)
-    # -----------------------------------------------------------------------
-    gss = GroupShuffleSplit(n_splits=1, test_size=0.30, random_state=SEED)
-    train_idx, test_idx = next(gss.split(F, y, groups))
-    
-    F_tr, F_te = F[train_idx], F[test_idx]
-    y_tr, y_te = y[train_idx], y[test_idx]
-    print(f"  Train: {len(y_tr)} clips  |  Test: {len(y_te)} clips")
+    fold_metrics = []
+    pred_rows = []
+    assertion_messages = []
 
-    # -----------------------------------------------------------------------
-    # 4. Train classifier on TRAIN split only
-    # -----------------------------------------------------------------------
-    print("Training Random Forest baseline ...")
-    clf = models.build_baseline("rf", seed=SEED)
-    clf.fit(F_tr, y_tr)
+    for fold, (train_idx, test_idx) in enumerate(cv_folds):
+        messages = eval_utils.assert_group_disjoint(
+            y,
+            group_keys,
+            {"train": train_idx, "test": test_idx},
+        )
+        assertion_messages.extend([f"fold={fold} {m}" for m in messages])
 
-    # -----------------------------------------------------------------------
-    # 5. Evaluate on held-out TEST split
-    # -----------------------------------------------------------------------
-    scores = clf.predict_proba(F_te)[:, 1]
-    y_hat  = (scores >= 0.5).astype(int)
+        clf = models.build_baseline("rf", seed=SEED + fold)
+        clf.fit(F[train_idx], y[train_idx])
+        scores = clf.predict_proba(F[test_idx])[:, 1]
+        metrics = evaluate.binary_detection_metrics(y[test_idx], scores)
+        fold_metrics.append(metrics)
 
-    acc   = float((y_hat == y_te).mean())
-    auc   = evaluate.plot_roc(y_te, scores,
-                              os.path.join(RESULTS, "roc_real.png"),
-                              title=f"Drone detection ROC ({dataset_name})")
-    evaluate.plot_confusion(y_te, y_hat,
-                            os.path.join(RESULTS, "confusion_real.png"))
-    
-    pd01  = evaluate.pd_at_pfa(y_te, scores, pfa=0.01)
-    pd05  = evaluate.pd_at_pfa(y_te, scores, pfa=0.05)
-    pd10  = evaluate.pd_at_pfa(y_te, scores, pfa=0.10)
+        for sample_idx, label, score in zip(test_idx, y[test_idx], scores):
+            pred_rows.append(
+                {
+                    "model": "rf",
+                    "group_mode": group_mode,
+                    "fold": fold,
+                    "sample_index": int(sample_idx),
+                    "label": int(label),
+                    "score": float(score),
+                    "group_key": str(group_keys[sample_idx]),
+                    "file_key": str(file_keys[sample_idx]),
+                }
+            )
 
-    # -----------------------------------------------------------------------
-    # 6. Report
-    # -----------------------------------------------------------------------
-    print("\n" + "=" * 58)
-    print(f"  Real-data results  ({dataset_name} — held-out test split)")
-    print("=" * 58)
-    print(f"  Accuracy   : {acc:.4f}  ({acc*100:.1f}%)")
-    print(f"  ROC-AUC    : {auc:.4f}")
-    print(f"  Pd@1%FA    : {pd01:.4f}")
-    print(f"  Pd@5%FA    : {pd05:.4f}")
-    print(f"  Pd@10%FA   : {pd10:.4f}")
-    print(f"  Train size : {len(y_tr)} clips  "
-          f"(drone={int((y_tr==1).sum())}, no-drone={int((y_tr==0).sum())})")
-    print(f"  Test  size : {len(y_te)} clips  "
-          f"(drone={int((y_te==1).sum())}, no-drone={int((y_te==0).sum())})")
-    print(f"  Clips/class: no-drone={n0}, drone={n1}")
-    
-    unique_train_groups = len(np.unique(groups[train_idx]))
-    unique_test_groups = len(np.unique(groups[test_idx]))
-    print(f"  Recordings : train={unique_train_groups}, test={unique_test_groups}")
-    print("=" * 58)
-    print(f"\nFigures -> {RESULTS}/roc_real.png, confusion_real.png")
+        print(
+            f"  fold {fold}: "
+            f"AUC={metrics['auc']:.4f}  "
+            f"acc={metrics['accuracy']:.4f}  "
+            f"Pd@1%FA={metrics['pd_at_1pct_fa']:.4f}  "
+            f"Pd@5%FA={metrics['pd_at_5pct_fa']:.4f}  "
+            f"Pd@10%FA={metrics['pd_at_10pct_fa']:.4f}"
+        )
+
+    summary = eval_utils.metrics_summary(fold_metrics)
+    print("Summary:", _format_summary(summary))
+
+    out_base = os.path.join(MANIFESTS, save_prefix)
+    eval_utils.write_predictions_csv(out_base + "_predictions.csv", pred_rows)
+    eval_utils.save_json(
+        out_base + "_summary.json",
+        {
+            "model": "rf",
+            "seed": SEED,
+            "folds": folds,
+            "group_mode": group_mode,
+            "pd_at_pfa_method": "interp",
+            "group_summary": eval_utils.group_summary(y, group_keys),
+            "fold_metrics": fold_metrics,
+            "summary": summary,
+            "assertions": assertion_messages,
+        },
+    )
+    eval_utils.save_json(
+        out_base + "_split_manifest.json",
+        {
+            "model": "rf",
+            "group_mode": group_mode,
+            "folds": eval_utils.split_manifest(y, group_keys, file_keys, cv_folds),
+        },
+    )
+    eval_utils.save_pip_freeze(os.path.join(MANIFESTS, "pip_freeze_rf.txt"))
+
+    # Retain familiar figures using the final fold only.
+    last_fold = cv_folds[-1]
+    last_test = last_fold[1]
+    last_scores = np.asarray([r["score"] for r in pred_rows if r["fold"] == folds - 1])
+    evaluate.plot_roc(y[last_test], last_scores, os.path.join(RESULTS, "roc_real.png"))
+    evaluate.plot_confusion(
+        y[last_test],
+        (last_scores >= 0.5).astype(int),
+        os.path.join(RESULTS, "confusion_real.png"),
+    )
+
+    return summary, assertion_messages
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--folds", type=int, default=5)
+    parser.add_argument(
+        "--group-modes",
+        nargs="+",
+        default=["corrected"],
+        choices=["clip", "file", "corrected"],
+    )
+    parser.add_argument("--leakage-study", action="store_true")
+    args = parser.parse_args()
+
+    os.makedirs(MANIFESTS, exist_ok=True)
+    group_modes = ["clip", "file", "corrected"] if args.leakage_study else args.group_modes
+
+    print(f"Loading DroneAudioDataset from local path: {DATA_ROOT} ...")
+    t0 = time.time()
+    X_list, y, groups, fs, metadata = load_drone_audio_dataset(
+        DATA_ROOT,
+        fs=FS,
+        clip_s=CLIP_S,
+        return_metadata=True,
+    )
+    if fs != FS:
+        raise RuntimeError(f"unexpected fs={fs}")
+    corrected_keys = metadata["group_keys"]
+    file_keys = metadata["file_keys"]
+    print(f"Loaded {len(y)} clips in {time.time() - t0:.1f}s")
+    print(f"Class counts: negative={(y == 0).sum()}, drone={(y == 1).sum()}")
+    print("Corrected group summary:", eval_utils.group_summary(y, corrected_keys))
+
+    all_summaries = {}
+    all_assertions = {}
+    for mode in group_modes:
+        prefix = f"real_rf_{mode}_{args.folds}fold"
+        summary, messages = run_rf_cv(
+            X_list,
+            y,
+            corrected_keys,
+            file_keys,
+            folds=args.folds,
+            group_mode=mode,
+            save_prefix=prefix,
+        )
+        all_summaries[mode] = summary
+        all_assertions[mode] = messages
+
+    eval_utils.save_json(
+        os.path.join(MANIFESTS, f"real_rf_all_modes_{args.folds}fold_summary.json"),
+        {
+            "seed": SEED,
+            "folds": args.folds,
+            "pd_at_pfa_method": "interp",
+            "summaries": all_summaries,
+            "assertions": all_assertions,
+        },
+    )
 
 
 if __name__ == "__main__":

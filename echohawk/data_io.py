@@ -288,10 +288,43 @@ def load_dads_hf(
 
 import re
 
+
+def drone_session_key(path: str | pathlib.Path) -> str:
+    """Return the recording-session key for a DroneAudioDataset drone clip.
+
+    DroneAudioDataset drone clips are pre-sliced with suffixes such as
+    ``_000_``.  The session key is the filename prefix before that chunk index.
+    """
+    stem = pathlib.Path(path).stem
+    return "drone:" + re.sub(r"_\d+_?$", "", stem)
+
+
+def negative_group_key(path: str | pathlib.Path) -> str:
+    """Return a leakage-safe source key for DroneAudioDataset negatives.
+
+    Supported patterns:
+    * ESC-50 ``fold-clipid-take-target.wav`` -> source clip id, e.g. ``100038``.
+    * Speech Commands ``{speaker}_nohash_{n}.wav`` -> speaker id.
+    * Fallback strips one trailing ``-digits`` or ``_digits`` chunk suffix.
+    """
+    stem = pathlib.Path(path).stem
+
+    esc = re.match(r"^\d+-([0-9]+)-[^-]+(?:-\d+)?$", stem)
+    if esc:
+        return "neg:esc50:" + esc.group(1)
+
+    speech = re.match(r"^(.+)_nohash_\d+$", stem)
+    if speech:
+        return "neg:speech:" + speech.group(1)
+
+    fallback = re.sub(r"(?:-\d+|_\d+)_?$", "", stem)
+    return "neg:fallback:" + fallback
+
 def load_drone_audio_dataset(
     root: str,
     fs: int = 16000,
     clip_s: float = 1.0,
+    return_metadata: bool = False,
 ) -> Tuple[List[np.ndarray], np.ndarray, np.ndarray, int]:
     """Load the DroneAudioDataset from a local layout.
     
@@ -312,6 +345,9 @@ def load_drone_audio_dataset(
     X_list: List[np.ndarray] = []
     y_list: List[int] = []
     groups_list: List[int] = []
+    group_keys_list: List[str] = []
+    file_keys_list: List[str] = []
+    file_paths_list: List[str] = []
     
     session_keys = {}
 
@@ -335,18 +371,16 @@ def load_drone_audio_dataset(
                 f"No audio files found under {class_dir}."
             )
         for wav_path in wav_files:
-            stem = wav_path.stem
             if label == 1:
-                # Drone files are pre-chunked; extract session prefix
-                key = re.sub(r'_\d+_?$', '', stem)
+                key = drone_session_key(wav_path)
             else:
-                # Non-drone files are independent recordings
-                key = stem
-                
+                key = negative_group_key(wav_path)
+
             if key not in session_keys:
                 session_keys[key] = len(session_keys)
             group_id = session_keys[key]
-            
+            file_key = f"file:{label}:{wav_path.stem}"
+
             try:
                 data, fs_orig = _read_wav(str(wav_path))
             except Exception as exc:  # noqa: BLE001
@@ -355,17 +389,29 @@ def load_drone_audio_dataset(
             if fs_orig != fs:
                 data = _resample(data, fs_orig, fs)
             clips = _segment(data, clip_len)
-            
+
             X_list.extend(clips)
             y_list.extend([label] * len(clips))
             groups_list.extend([group_id] * len(clips))
+            group_keys_list.extend([key] * len(clips))
+            file_keys_list.extend([file_key] * len(clips))
+            file_paths_list.extend([str(wav_path)] * len(clips))
 
     if not X_list:
         raise RuntimeError(
             f"No clips loaded from '{root}'. "
             "Verify dataset structure and audio file integrity."
         )
-    return X_list, np.asarray(y_list, dtype=np.int64), np.asarray(groups_list, dtype=np.int64), fs
+    y_arr = np.asarray(y_list, dtype=np.int64)
+    groups_arr = np.asarray(groups_list, dtype=np.int64)
+    if return_metadata:
+        metadata = {
+            "group_keys": np.asarray(group_keys_list, dtype=object),
+            "file_keys": np.asarray(file_keys_list, dtype=object),
+            "file_paths": np.asarray(file_paths_list, dtype=object),
+        }
+        return X_list, y_arr, groups_arr, fs, metadata
+    return X_list, y_arr, groups_arr, fs
 
 # ---------------------------------------------------------------------------
 # Public API  Mode 4: DREGON Real DOA

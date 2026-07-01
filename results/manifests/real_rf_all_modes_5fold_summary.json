@@ -1,0 +1,216 @@
+{
+  "assertions": {
+    "clip": [
+      "fold=0 label=0: test=3371, train=13484; pairwise disjoint=PASS",
+      "fold=0 label=1: test=484, train=1936; pairwise disjoint=PASS",
+      "fold=1 label=0: test=3372, train=13483; pairwise disjoint=PASS",
+      "fold=1 label=1: test=483, train=1937; pairwise disjoint=PASS",
+      "fold=2 label=0: test=3372, train=13483; pairwise disjoint=PASS",
+      "fold=2 label=1: test=483, train=1937; pairwise disjoint=PASS",
+      "fold=3 label=0: test=3370, train=13485; pairwise disjoint=PASS",
+      "fold=3 label=1: test=485, train=1935; pairwise disjoint=PASS",
+      "fold=4 label=0: test=3370, train=13485; pairwise disjoint=PASS",
+      "fold=4 label=1: test=485, train=1935; pairwise disjoint=PASS"
+    ],
+    "corrected": [
+      "fold=0 label=0: test=378, train=1518; pairwise disjoint=PASS",
+      "fold=0 label=1: test=52, train=205; pairwise disjoint=PASS",
+      "fold=1 label=0: test=379, train=1517; pairwise disjoint=PASS",
+      "fold=1 label=1: test=51, train=206; pairwise disjoint=PASS",
+      "fold=2 label=0: test=381, train=1515; pairwise disjoint=PASS",
+      "fold=2 label=1: test=50, train=207; pairwise disjoint=PASS",
+      "fold=3 label=0: test=379, train=1517; pairwise disjoint=PASS",
+      "fold=3 label=1: test=52, train=205; pairwise disjoint=PASS",
+      "fold=4 label=0: test=379, train=1517; pairwise disjoint=PASS",
+      "fold=4 label=1: test=52, train=205; pairwise disjoint=PASS"
+    ],
+    "file": [
+      "fold=0 label=0: test=2074, train=8298; pairwise disjoint=PASS",
+      "fold=0 label=1: test=267, train=1065; pairwise disjoint=PASS",
+      "fold=1 label=0: test=2078, train=8294; pairwise disjoint=PASS",
+      "fold=1 label=1: test=262, train=1070; pairwise disjoint=PASS",
+      "fold=2 label=0: test=2071, train=8301; pairwise disjoint=PASS",
+      "fold=2 label=1: test=269, train=1063; pairwise disjoint=PASS",
+      "fold=3 label=0: test=2073, train=8299; pairwise disjoint=PASS",
+      "fold=3 label=1: test=268, train=1064; pairwise disjoint=PASS",
+      "fold=4 label=0: test=2076, train=8296; pairwise disjoint=PASS",
+      "fold=4 label=1: test=266, train=1066; pairwise disjoint=PASS"
+    ]
+  },
+  "folds": 5,
+  "pd_at_pfa_method": "interp",
+  "seed": 0,
+  "summaries": {
+    "clip": {
+      "accuracy": {
+        "ci95": 0.0028198425175376927,
+        "mean": 0.9617120622568093,
+        "values": [
+          0.9621271076523995,
+          0.9665369649805448,
+          0.9623865110246433,
+          0.9587548638132296,
+          0.9587548638132296
+        ]
+      },
+      "auc": {
+        "ci95": 0.0027067309513800052,
+        "mean": 0.9862490679010998,
+        "values": [
+          0.9831652328685849,
+          0.9910602231505836,
+          0.9867766824095154,
+          0.9839673896417757,
+          0.9862758114350393
+        ]
+      },
+      "pd_at_10pct_fa": {
+        "ci95": 0.009889152325121837,
+        "mean": 0.9652239312331403,
+        "values": [
+          0.9566115702479339,
+          0.9816149068322981,
+          0.9724292615596963,
+          0.9567010309278351,
+          0.9587628865979382
+        ]
+      },
+      "pd_at_1pct_fa": {
+        "ci95": 0.020247441406182846,
+        "mean": 0.8113835743956003,
+        "values": [
+          0.8138997933884297,
+          0.8281573498964804,
+          0.8237267080745342,
+          0.82,
+          0.7711340206185567
+        ]
+      },
+      "pd_at_5pct_fa": {
+        "ci95": 0.00957597206064985,
+        "mean": 0.9374877347449828,
+        "values": [
+          0.9284865702479339,
+          0.952215320910973,
+          0.9461697722567288,
+          0.9298969072164949,
+          0.9306701030927835
+        ]
+      }
+    },
+    "corrected": {
+      "accuracy": {
+        "ci95": 0.009562551227193712,
+        "mean": 0.9537743190661478,
+        "values": [
+          0.935408560311284,
+          0.9520103761348897,
+          0.9600518806744488,
+          0.9610894941634242,
+          0.9603112840466926
+        ]
+      },
+      "auc": {
+        "ci95": 0.01950447787748982,
+        "mean": 0.9661344449026249,
+        "values": [
+          0.9275340770398356,
+          0.96809990775508,
+          0.9733009929232642,
+          0.9801102346227648,
+          0.98162701217218
+        ]
+      },
+      "pd_at_10pct_fa": {
+        "ci95": 0.03007989545226562,
+        "mean": 0.9239291551746452,
+        "values": [
+          0.8675746924428822,
+          0.9415584415584416,
+          0.9152759381898455,
+          0.951271186440678,
+          0.9439655172413793
+        ]
+      },
+      "pd_at_1pct_fa": {
+        "ci95": 0.04728136839522236,
+        "mean": 0.7228915710674575,
+        "values": [
+          0.6309314586994728,
+          0.7272727272727273,
+          0.7329359823399558,
+          0.7669491525423728,
+          0.7563685344827586
+        ]
+      },
+      "pd_at_5pct_fa": {
+        "ci95": 0.035712719479735304,
+        "mean": 0.8746872055306631,
+        "values": [
+          0.8085676625659052,
+          0.9037878787878788,
+          0.8631346578366446,
+          0.9063294491525424,
+          0.8916163793103449
+        ]
+      }
+    },
+    "file": {
+      "accuracy": {
+        "ci95": 0.0018500168395005948,
+        "mean": 0.9620752269779507,
+        "values": [
+          0.9626459143968872,
+          0.9652399481193256,
+          0.9595330739299611,
+          0.9618677042801557,
+          0.9610894941634242
+        ]
+      },
+      "auc": {
+        "ci95": 0.0016048837662573407,
+        "mean": 0.9860732090739919,
+        "values": [
+          0.9838911914123815,
+          0.9889589307164119,
+          0.9861387158764455,
+          0.9855872571498699,
+          0.9857899502148499
+        ]
+      },
+      "pd_at_10pct_fa": {
+        "ci95": 0.0029586626749316942,
+        "mean": 0.9658303926234189,
+        "values": [
+          0.9629629629629629,
+          0.9705882352941176,
+          0.9650924024640657,
+          0.9678527607361963,
+          0.9626556016597511
+        ]
+      },
+      "pd_at_1pct_fa": {
+        "ci95": 0.025761337370470757,
+        "mean": 0.8067919101000429,
+        "values": [
+          0.8251028806584362,
+          0.8419957983193277,
+          0.7796303901437371,
+          0.813558282208589,
+          0.7736721991701245
+        ]
+      },
+      "pd_at_5pct_fa": {
+        "ci95": 0.009740454901989968,
+        "mean": 0.9366711732851177,
+        "values": [
+          0.936522633744856,
+          0.9558692226890757,
+          0.9320328542094456,
+          0.9294705748693479,
+          0.9294605809128631
+        ]
+      }
+    }
+  }
+}

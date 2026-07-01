@@ -14,6 +14,8 @@ data/*
 
 # keep results/ figures committed so the README renders
 results/*.pt
+results/manifests/*predictions*.csv
+results/manifests/*scores*.csv
 
 # internal build process — keep local, do not publish
 doer_prompts/
@@ -22,3 +24,9 @@ milestone_report.md
 fix_data_io.py
 *.log
 .pytest_cache/
+
+# stray preview images / LaTeX build artifacts
+report/_*.jpg
+*.aux
+*.out
+*.toc

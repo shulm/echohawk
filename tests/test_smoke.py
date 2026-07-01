@@ -4,8 +4,6 @@ import tempfile
 import numpy as np
 
 import pytest
-import soundfile as sf
-
 _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _REPO)
 
@@ -59,6 +57,7 @@ def test_bpf():
     assert err <= 5.0, f"Expected BPF error <= 5Hz, got {err}Hz"
 
 def test_load_dregon_flight():
+    sf = pytest.importorskip("soundfile")
     # Create dummy 8-channel WAV
     fs = 16000
     dur = 0.1
