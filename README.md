@@ -17,7 +17,9 @@ real public datasets (DREGON, DADS) are included.
 
 [**EchoHawk: A Reproducible Acoustic Pipeline for Drone Detection, Classification, and Direction-Finding, with a Cautionary Study of Session-Level Data Leakage**](report/echohawk-arxiv.pdf)
 
-[Read the paper (PDF)](report/echohawk-arxiv.pdf).
+[Read the paper (PDF)](report/echohawk-arxiv.pdf) | [arXiv:2606.29589](https://arxiv.org/abs/2606.29589)
+
+**Citation:** Shulman, D., 2026. EchoHawk: A Reproducible Acoustic Pipeline for Drone Detection, Classification, and Direction-Finding, with a Cautionary Study of Session-Level Data Leakage. arXiv preprint [arXiv:2606.29589](https://arxiv.org/abs/2606.29589).
 
 ## What's inside
 
