@@ -13,6 +13,12 @@ real public datasets (DREGON, DADS) are included.
 > Built as an open, methods-focused demonstrator. It is not affiliated with any
 > company and uses only public/synthetic data.
 
+## Paper
+
+[**EchoHawk: A Reproducible Acoustic Pipeline for Drone Detection, Classification, and Direction-Finding, with a Cautionary Study of Session-Level Data Leakage**](report/echohawk-arxiv.pdf)
+
+[Read the paper (PDF)](report/echohawk-arxiv.pdf).
+
 ## What's inside
 
 | Capability | Method | Module |
